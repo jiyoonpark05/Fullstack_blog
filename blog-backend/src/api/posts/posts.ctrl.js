@@ -12,7 +12,7 @@ const posts = [
 // 포스트 작성
 // POST/api/posts
 // {title,body}
-exports.write = (ctx) => {
+export const write = (ctx) => {
   //REST API의 Request bodysms ctx.request.body에서 조회할 수 있다.
   const { title, body } = ctx.request.body;
   postId += 1; // 기존 postid값에 1을 더함
@@ -23,12 +23,12 @@ exports.write = (ctx) => {
 
 //포스트 목록 조회
 //GET /api / posts
-exports.list = (ctx) => {
+export const list = (ctx) => {
   ctx.body = posts;
 };
 
 //특정포트스 조회 GET/api/:id
-exports.read = (ctx) => {
+export const read = (ctx) => {
   const { id } = ctx.params;
   //주어진 id 값으로 포스트를 찾음
   //파라미터로 받아 온 값은 문자열 형식이므로 파라미터를 숫자로 변환하거나 비교할 p.id값을 문자열로 변경해야
@@ -44,7 +44,7 @@ exports.read = (ctx) => {
 };
 
 //특정 포스트 제거 DELETE/api/posts/:id
-exports.remove = (ctx) => {
+export const remove = (ctx) => {
   const { id } = ctx.params;
   //해당 id를 가진 포스트가 몇번째 인지 확인
   const index = post.findIndex((p) => p.id.toString === id);
@@ -61,19 +61,18 @@ exports.remove = (ctx) => {
 };
 
 //포스트 수정 (교체) PUT/api/posts/:id
-exports.replace = (ctx) => {
+export const replace = (ctx) => {
   //포스트 전체 정보를 입력해 데이터를 통째로 교체할 때 사용
   const { id } = ctx.params;
   //해당 아이디를 가진 post가 몇 번째인지 확인
-  const index = post.findIndex((p) => p.id.toString() === id);
-  if ((index = -1)) {
+  const index = posts.findIndex((p) => p.id.toString() === id);
+  if (index === -1) {
     ctx.status = 404;
     ctx.body = {
       message: '포스트가 존재하지 않습니다.',
     };
     return;
   }
-
   // 전체 객체를 덮어 씌움
   // 따라서 id를 제외한 기존 정보를 ㅏㄴㄹ리고 객체를 새로 만든다
   posts[index] = {
@@ -85,19 +84,18 @@ exports.replace = (ctx) => {
 
 //포스트 수정 (특정필드 변경) PATCH/api/posts/:id
 // {title,body}
-exports.update = (ctx) => {
+export const update = (ctx) => {
   //path매서드는 주어진 필드만 교체
   const { id } = ctx.params;
   //해당 id를 가진 post가 몇 번 째인지 확인
   const index = posts.findIndex((p) => p.id.toString() === id);
-  if ((index = -1)) {
+  if (index === -1) {
     ctx.status = 404;
     ctx.body = {
       message: '포스트가 존재하지 않습니다.',
     };
     return;
   }
-
   //기존 값에 정보를 덮어씌운다.
   posts[index] = {
     ...posts[index],
