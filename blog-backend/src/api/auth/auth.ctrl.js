@@ -87,7 +87,18 @@ export const login = async (ctx) => {
 };
 
 //로그인 상태 확인
-export const check = async (ctx) => {};
+export const check = async (ctx) => {
+  const { user } = ctx.status;
+  if (!user) {
+    //로그인중이 아님
+    ctx.status = 401; //unauthorized
+    return;
+  }
+  ctx.body = user;
+};
 
 //로그아웃
-export const logout = async (ctx) => {};
+export const logout = async (ctx) => {
+  ctx.cookies.set('access_token');
+  ctx.status = 204; //no content
+};
