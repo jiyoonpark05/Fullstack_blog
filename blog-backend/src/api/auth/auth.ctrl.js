@@ -50,6 +50,23 @@ export const login = async (ctx) => {
   const { username, password } = ctx.request.body;
 
   //username, password 없으면 에러 처리
+  if (!username || !password) {
+    ctx.status = 401; //unauthorized
+    return;
+  }
+
+  try {
+    const user = await User.findByUsername(username);
+    //계정이 존재하지 않으면 에러처리
+    if (!user) {
+      ctx.status = 401;
+      return;
+    }
+
+    ctx.body = user.serialize();
+  } catch (e) {
+    ctx.throw(500, e);
+  }
 };
 
 //로그인 상태 확인
