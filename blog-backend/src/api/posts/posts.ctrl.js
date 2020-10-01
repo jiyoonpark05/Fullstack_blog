@@ -1,105 +1,87 @@
-let postId = 1; //id의 초기값
+import { Mongoose } from 'mongoose';
+import Post from '../../models/post';
+import mongoose from 'mongoose';
 
-// post 배열의 초기 데이터
-const posts = [
-  {
-    id: 1,
-    title: 'title',
-    body: 'context',
-  },
-];
+//objectId를 검증해야 하는 api는 read, remove,update 세가지.
+//모든 함수에서 검증하려고 한다면 코드가 길어지므로 상단에  미들웨어를 만든다
+// 미들웨어를 만든 후, src/api/posts/index.js 에서 검증이 필요한 부분에 다음 미들웨어를 추가
+const { objectId } = mongoose.Types;
 
-// 포스트 작성
-// POST/api/posts
-// {title,body}
-export const write = (ctx) => {
-  //REST API의 Request bodysms ctx.request.body에서 조회할 수 있다.
-  const { title, body } = ctx.request.body;
-  postId += 1; // 기존 postid값에 1을 더함
-  const post = { id: postId, title, body };
-  posts.push(post);
-  ctx.body = post;
-};
-
-//포스트 목록 조회
-//GET /api / posts
-export const list = (ctx) => {
-  ctx.body = posts;
-};
-
-//특정포트스 조회 GET/api/:id
-export const read = (ctx) => {
+export const checkObjectId = (ctx, next) => {
   const { id } = ctx.params;
-  //주어진 id 값으로 포스트를 찾음
-  //파라미터로 받아 온 값은 문자열 형식이므로 파라미터를 숫자로 변환하거나 비교할 p.id값을 문자열로 변경해야
-  const post = post.find((p) => p.id.toString() === id);
-  if (!post) {
-    ctx.status = 404;
-    ctx.body = {
-      message: '포스트가 존재하지 않습니다.',
-    };
+  if (!objectId.isValid(id)) {
+    ctx.status = 400; //bad request
     return;
   }
-  ctx.body = post;
+  return next();
 };
 
-//특정 포스트 제거 DELETE/api/posts/:id
-export const remove = (ctx) => {
-  const { id } = ctx.params;
-  //해당 id를 가진 포스트가 몇번째 인지 확인
-  const index = post.findIndex((p) => p.id.toString === id);
-  if (index === -1) {
-    ctx.status = 404;
-    ctx.body = {
-      message: '포스트가 존재하지 않습니다.',
-    };
-    return;
+// 글쓰기
+export const write = async (ctx) => {
+  const { title, body, tags } = ctx.request.body;
+  const post = new Post({
+    title,
+    body,
+    tags,
+  });
+
+  try {
+    await post.save();
+    ctx.body = post;
+  } catch (e) {
+    ctx.throw(500, e);
   }
-  //index 번째 아이템을 제거합니다.
-  posts.splice(index, 1);
-  ctx.status = 204; //no content
 };
 
-//포스트 수정 (교체) PUT/api/posts/:id
-export const replace = (ctx) => {
-  //포스트 전체 정보를 입력해 데이터를 통째로 교체할 때 사용
-  const { id } = ctx.params;
-  //해당 아이디를 가진 post가 몇 번째인지 확인
-  const index = posts.findIndex((p) => p.id.toString() === id);
-  if (index === -1) {
-    ctx.status = 404;
-    ctx.body = {
-      message: '포스트가 존재하지 않습니다.',
-    };
-    return;
+// 조회하기
+export const list = async (ctx) => {
+  try {
+    const posts = await Post.find().exec();
+    ctx.body = posts;
+  } catch (e) {
+    ctx.throw(500, e);
   }
-  // 전체 객체를 덮어 씌움
-  // 따라서 id를 제외한 기존 정보를 ㅏㄴㄹ리고 객체를 새로 만든다
-  posts[index] = {
-    id,
-    ...ctx.request.body,
-  };
-  ctx.body = posts[index];
 };
 
-//포스트 수정 (특정필드 변경) PATCH/api/posts/:id
-// {title,body}
-export const update = (ctx) => {
-  //path매서드는 주어진 필드만 교체
+//특정 포스트 조회
+export const read = async (ctx) => {
   const { id } = ctx.params;
-  //해당 id를 가진 post가 몇 번 째인지 확인
-  const index = posts.findIndex((p) => p.id.toString() === id);
-  if (index === -1) {
-    ctx.status = 404;
-    ctx.body = {
-      message: '포스트가 존재하지 않습니다.',
-    };
-    return;
+  try {
+    const post = await Post.findById(id).exec();
+    if (!post) {
+      ctx.status = 404; //not founded
+      return;
+    }
+    ctx.body = post;
+  } catch (e) {
+    ctx.throw(500, e);
   }
-  //기존 값에 정보를 덮어씌운다.
-  posts[index] = {
-    ...posts[index],
-    ...ctx.request.body,
-  };
-  ctx.body = posts[index];
+};
+
+export const remove = async (ctx) => {
+  const { id } = ctx.params;
+  try {
+    await Post.findByIdAndRemove(id).exec();
+    ctx.status = 204; //no content (성공하기는 했으나 응답할 데이터는 없음 )
+  } catch (e) {
+    ctx.throw(500, e);
+  }
+};
+
+export const update = async (ctx) => {
+  const { id } = ctx.params;
+  try {
+    const post = await Post.findByIdAndUpdate(id, ctx.request.body, {
+      new: true, //이 값을 설정하면 업데이트 된 데이터를 반환
+      //false일 때는 업데이트 되기 전의 데이터를 반환
+    }).exec();
+
+    if (!post) {
+      ctx.status = 404;
+      return;
+    }
+    ctx.body = post;
+  } catch (e) {
+    ctx.throw(500, e);
+  }
 };
