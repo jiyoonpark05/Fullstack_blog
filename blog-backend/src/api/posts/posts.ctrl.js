@@ -7,18 +7,29 @@ import Joi from '@hapi/joi';
 // 미들웨어를 만든 후, src/api/posts/index.js 에서 검증이 필요한 부분에 다음 미들웨어를 추가
 const { objectId } = mongoose.Types;
 
-export const checkObjectId = (ctx, next) => {
+export const getPostById = async (ctx, next) => {
   const { id } = ctx.params;
   if (!objectId.isValid(id)) {
     ctx.status = 400; //bad request
     return;
   }
-  return next();
+  try {
+    const post = await Post.findById(id);
+    //포스트가 존재하지 않을 떄
+    if (!post) {
+      ctx.status = 404; // not found
+      return;
+    }
+    ctx.state.post = post;
+    return next();
+  } catch (e) {
+    ctx.throw(500, e);
+  }
 };
 
-// 글쓰기
+/* 글쓰기 */
 export const write = async (ctx) => {
-  const schema = Joi.objectId().keys({
+  const schema = Joi.object().keys({
     //객체가 다음 필드를 가지고 있음을 검즘
     title: Joi.string().required(),
     body: Joi.string().required(),
@@ -39,6 +50,7 @@ export const write = async (ctx) => {
     title,
     body,
     tags,
+    user: ctx.state.user,
   });
 
   try {
@@ -49,7 +61,10 @@ export const write = async (ctx) => {
   }
 };
 
-// 조회하기
+/* 
+조회하기 
+GET /api/posts?username=&tag=&page=
+*/
 export const list = async (ctx) => {
   // paging
   // 1. query 는 문자열이므로 숫자로 변환이 필요하다.
@@ -62,6 +77,13 @@ export const list = async (ctx) => {
     return;
   }
 
+  const { tag, username } = ctx.query;
+  //tag, username값이 유효하면 객체 안에 넣고, 아니면 넣지 않음
+  const query = {
+    ...(username ? { 'user.username': username } : {}),
+    ...(tag ? { tags: tag } : {}),
+  };
+
   try {
     const posts = await Post.find()
       .sort({ _id: -1 })
@@ -69,7 +91,7 @@ export const list = async (ctx) => {
       .skip((page - 1) * 10)
       .lean()
       .exec();
-    const postCount = await Post.countDocuments().exec();
+    const postCount = await Post.countDocuments(query).exec();
     ctx.set('Last-Page', Math.ceil(postCount / 10));
     ctx.body = posts.map((post) => ({
       ...post,
@@ -81,21 +103,12 @@ export const list = async (ctx) => {
   }
 };
 
-//특정 포스트 조회
-export const read = async (ctx) => {
-  const { id } = ctx.params;
-  try {
-    const post = await Post.findById(id).exec();
-    if (!post) {
-      ctx.status = 404; //not founded
-      return;
-    }
-    ctx.body = post;
-  } catch (e) {
-    ctx.throw(500, e);
-  }
+/*특정 포스트 조회 */
+export const read = (ctx) => {
+  ctx.body = ctx.state.post;
 };
 
+/*삭제*/
 export const remove = async (ctx) => {
   const { id } = ctx.params;
   try {
@@ -106,6 +119,7 @@ export const remove = async (ctx) => {
   }
 };
 
+/*수정*/
 export const update = async (ctx) => {
   const { id } = ctx.params;
 
@@ -136,4 +150,14 @@ export const update = async (ctx) => {
   } catch (e) {
     ctx.throw(500, e);
   }
+
+  /*찾은 포스트가 로그인중인 사용자가 작성한 포스트인지 확인*/
+  export const checkOwnPost = (ctx, next) => {
+    const { user, post } = ctx.state;
+    if (post.user._id.toString() !== user._id) {
+      ctx.status = 403;
+      return;
+    }
+    return next();
+  };
 };
