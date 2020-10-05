@@ -1,7 +1,8 @@
 import React from 'react';
+import Button from '../components/common/Button';
 
 const PostList = () => {
-  return <div>Post list</div>;
+  return <Button>버튼데스</Button>;
 };
 
 export default PostList;
