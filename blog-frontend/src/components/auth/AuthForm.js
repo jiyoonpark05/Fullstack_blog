@@ -23,7 +23,7 @@ const AuthFormBlock = styled.div`
 const StyledInput = styled.input`
 font-size : 1rem;
 border:none;
-border-bottom:1rem solid ${palette.gray[5]};
+border-bottom: 1px solid ${palette.gray[5]};
 padding-bottom : 0.5rem;
 outline : none;
 width : 100%
@@ -35,13 +35,14 @@ width : 100%
     margin-top: 1rem;
 }
 `;
+
 /**
  * 폼 하단에 로그인 또는 회원가입 링크
  */
 
 const Footer = styled.div`
   margin-top: 2rem;
-  text-align: rigt;
+  text-align: right;
   a {
     color: ${palette.gray[6]};
     text-decoration: underline;
@@ -50,6 +51,7 @@ const Footer = styled.div`
     }
   }
 `;
+
 const AuthForm = () => {
   return (
     <AuthFormBlock>
@@ -62,7 +64,9 @@ const AuthForm = () => {
           placeholder="pass"
           type="password"
         />
-        <Button>로그인</Button>
+        <Button cyan fullWidth style={{ marginTop: '1rem' }}>
+          로그인
+        </Button>
       </form>
       <Footer>
         <Link to="/register">회원가입</Link>
