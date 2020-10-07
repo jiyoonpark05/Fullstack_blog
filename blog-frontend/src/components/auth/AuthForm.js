@@ -21,19 +21,19 @@ const AuthFormBlock = styled.div`
  */
 
 const StyledInput = styled.input`
-font-size : 1rem;
-border:none;
-border-bottom: 1px solid ${palette.gray[5]};
-padding-bottom : 0.5rem;
-outline : none;
-width : 100%
-&:focus {
-    color:$oc-teal-7;
-    border-bottom : 1px solid ${palette.gray[7]};
-}
-&+& {
+  font-size: 1rem;
+  border: none;
+  border-bottom: 1px solid ${palette.gray[5]};
+  padding-bottom: 0.5rem;
+  outline: none;
+  width: 100%;
+  &:focus {
+    color: $oc-teal-7;
+    border-bottom: 1px solid ${palette.gray[7]};
+  }
+  & + & {
     margin-top: 1rem;
-}
+  }
 `;
 
 /**
@@ -52,24 +52,52 @@ const Footer = styled.div`
   }
 `;
 
-const AuthForm = () => {
+const textMap = {
+  login: '로그인',
+  register: '회원가입',
+};
+
+const AuthForm = ({ type, form, onChange, onSubmit }) => {
+  const text = textMap[type];
   return (
     <AuthFormBlock>
-      <h3>login</h3>
-      <form>
-        <StyledInput autoComplete="username" name="username" placeholder="ID" />
+      <h3>{text}</h3>
+      <form onSubmit={onSubmit}>
+        <StyledInput
+          autoComplete="username"
+          name="username"
+          placeholder="ID"
+          onChange={onChange}
+          value={form.username}
+        />
         <StyledInput
           autoComplete="new-password"
           name="password"
           placeholder="pass"
           type="password"
+          onChange={onChange}
+          value={form.password}
         />
+        {type === 'register' && (
+          <StyledInput
+            autoComplete="new-password"
+            name="passwordConfirm"
+            placeholder="비밀번호 확인"
+            type="password"
+            onChange={onChange}
+            value={form.passwordConfirm}
+          />
+        )}
         <Button cyan fullWidth style={{ marginTop: '1rem' }}>
-          로그인
+          {text}
         </Button>
       </form>
       <Footer>
-        <Link to="/register">회원가입</Link>
+        {type === 'login' ? (
+          <Link to="/register">회원가입</Link>
+        ) : (
+          <Link to="/login">로그인</Link>
+        )}
       </Footer>
     </AuthFormBlock>
   );
